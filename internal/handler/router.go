@@ -4,11 +4,12 @@ import (
 	"net/http"
 
 	"github.com/abzalserikbay/jobify/internal/middleware"
+	rediscache "github.com/abzalserikbay/jobify/internal/repository/redis"
 	jwtpkg "github.com/abzalserikbay/jobify/pkg/jwt"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	httpSwagger "github.com/swaggo/http-swagger/v2"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type Deps struct {
@@ -16,8 +17,9 @@ type Deps struct {
 	UserHandler        *UserHandler
 	JobHandler         *JobHandler
 	ApplicationHandler *ApplicationHandler
+	SavedJobHandler    *SavedJobHandler
 	JWT                *jwtpkg.Manager
-	RateLimitStore     middleware.RateLimitStore
+	RateLimitStore     *rediscache.RateLimitStore
 	RateLimitPerMin    int
 }
 
@@ -31,23 +33,19 @@ func NewRouter(deps *Deps) http.Handler {
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
 	}))
-	if deps.RateLimitStore != nil {
-		r.Use(middleware.RateLimit(deps.RateLimitStore, deps.RateLimitPerMin))
-	}
+	r.Use(middleware.RateLimit(deps.RateLimitStore, deps.RateLimitPerMin))
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok"}`))
 	})
 
-	r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("/swagger/doc.json")))
+	r.Get("/swagger/*", httpSwagger.Handler())
 
 	r.Route("/api/v1", func(r chi.Router) {
-		// Public
 		r.Post("/auth/register", deps.AuthHandler.Register)
 		r.Post("/auth/login", deps.AuthHandler.Login)
 
-		// Protected
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.JWTAuth(deps.JWT))
 
@@ -62,7 +60,10 @@ func NewRouter(deps *Deps) http.Handler {
 			r.Put("/applications/{id}", deps.ApplicationHandler.UpdateStatus)
 			r.Delete("/applications/{id}", deps.ApplicationHandler.Delete)
 
-			// Admin only
+			r.Post("/saved-jobs", deps.SavedJobHandler.Save)
+			r.Delete("/saved-jobs/{job_id}", deps.SavedJobHandler.Unsave)
+			r.Get("/saved-jobs", deps.SavedJobHandler.List)
+
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.RequireRole("admin"))
 				r.Post("/jobs", deps.JobHandler.Create)

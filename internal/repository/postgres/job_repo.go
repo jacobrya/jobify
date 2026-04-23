@@ -34,12 +34,13 @@ func (r *JobRepo) Create(ctx context.Context, j *domain.Job) error {
 
 func (r *JobRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Job, error) {
 	var j domain.Job
-	q := `SELECT id, title, company, description, skills, salary_min, salary_max, is_remote, location, source, source_id, url, is_active, created_at
+	q := `SELECT id, title, company, description, skills, salary_min, salary_max,
+	             is_remote, location, source, source_id, url, is_active, views_count, created_at
 	      FROM jobs WHERE id = $1 AND is_active = true`
 	err := r.db.QueryRow(ctx, q, id).Scan(
 		&j.ID, &j.Title, &j.Company, &j.Description, &j.Skills,
 		&j.SalaryMin, &j.SalaryMax, &j.IsRemote, &j.Location,
-		&j.Source, &j.SourceID, &j.URL, &j.IsActive, &j.CreatedAt,
+		&j.Source, &j.SourceID, &j.URL, &j.IsActive, &j.ViewsCount, &j.CreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, domain.ErrNotFound
@@ -90,8 +91,9 @@ func (r *JobRepo) List(ctx context.Context, f repository.JobFilter) ([]domain.Jo
 	offset := (f.Page - 1) * f.Limit
 
 	args = append(args, f.Limit, offset)
-	q := fmt.Sprintf(`SELECT id, title, company, description, skills, salary_min, salary_max, is_remote, location, source, source_id, url, is_active, created_at
-	      FROM jobs WHERE %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d`, cond, i, i+1)
+	q := fmt.Sprintf(`SELECT id, title, company, description, skills, salary_min, salary_max,
+	                         is_remote, location, source, source_id, url, is_active, views_count, created_at
+	                  FROM jobs WHERE %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d`, cond, i, i+1)
 
 	rows, err := r.db.Query(ctx, q, args...)
 	if err != nil {
@@ -105,7 +107,7 @@ func (r *JobRepo) List(ctx context.Context, f repository.JobFilter) ([]domain.Jo
 		if err := rows.Scan(
 			&j.ID, &j.Title, &j.Company, &j.Description, &j.Skills,
 			&j.SalaryMin, &j.SalaryMax, &j.IsRemote, &j.Location,
-			&j.Source, &j.SourceID, &j.URL, &j.IsActive, &j.CreatedAt,
+			&j.Source, &j.SourceID, &j.URL, &j.IsActive, &j.ViewsCount, &j.CreatedAt,
 		); err != nil {
 			return nil, 0, err
 		}
@@ -133,4 +135,12 @@ func (r *JobRepo) ExistsBySourceID(ctx context.Context, sourceID string) (bool, 
 	var exists bool
 	err := r.db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM jobs WHERE source_id=$1)`, sourceID).Scan(&exists)
 	return exists, err
+}
+
+func (r *JobRepo) IncrementViews(ctx context.Context, jobID uuid.UUID) error {
+	_, err := r.db.Exec(ctx, `UPDATE jobs SET views_count = views_count + 1 WHERE id = $1`, jobID)
+	if err != nil {
+		return fmt.Errorf("job_repo increment_views: %w", err)
+	}
+	return nil
 }

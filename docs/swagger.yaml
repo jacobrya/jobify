@@ -92,6 +92,8 @@ definitions:
         type: string
       url:
         type: string
+      views_count:
+        type: integer
     type: object
   domain.JobWithMatch:
     properties:
@@ -135,6 +137,8 @@ definitions:
         type: string
       url:
         type: string
+      views_count:
+        type: integer
     type: object
   domain.Role:
     enum:
@@ -795,6 +799,80 @@ paths:
       summary: Update the current user's developer profile
       tags:
       - users
+  /saved-jobs:
+    get:
+      parameters:
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: List saved jobs
+      tags:
+      - saved-jobs
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Job ID
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            job_id:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Save a job
+      tags:
+      - saved-jobs
+  /saved-jobs/{job_id}:
+    delete:
+      parameters:
+      - description: Job ID
+        in: path
+        name: job_id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Unsave a job
+      tags:
+      - saved-jobs
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer {token}" (token is returned by /auth/login).
