@@ -1,8 +1,14 @@
 package service
 
 import (
+	"context"
 	"sort"
 	"testing"
+	"time"
+
+	"github.com/abzalserikbay/jobify/internal/domain"
+	"github.com/abzalserikbay/jobify/internal/repository"
+	"github.com/google/uuid"
 )
 
 func TestCalculateMatch(t *testing.T) {
@@ -92,4 +98,54 @@ func equalSlices(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+type mockJobRepo struct {
+	getByIDFn       func(ctx context.Context, id uuid.UUID) (*domain.Job, error)
+	incrementViewFn func(ctx context.Context, id uuid.UUID) error
+}
+
+func (m *mockJobRepo) Create(_ context.Context, _ *domain.Job) error { return nil }
+func (m *mockJobRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Job, error) {
+	return m.getByIDFn(ctx, id)
+}
+func (m *mockJobRepo) List(_ context.Context, _ repository.JobFilter) ([]domain.Job, int, error) {
+	return nil, 0, nil
+}
+func (m *mockJobRepo) Update(_ context.Context, _ *domain.Job) error { return nil }
+func (m *mockJobRepo) Delete(_ context.Context, _ uuid.UUID) error   { return nil }
+func (m *mockJobRepo) ExistsBySourceID(_ context.Context, _ string) (bool, error) {
+	return false, nil
+}
+func (m *mockJobRepo) IncrementViews(ctx context.Context, id uuid.UUID) error {
+	return m.incrementViewFn(ctx, id)
+}
+
+func TestJobService_GetByID_IncrementsViews(t *testing.T) {
+	jobID := uuid.New()
+	called := make(chan struct{}, 1)
+
+	repo := &mockJobRepo{
+		getByIDFn: func(_ context.Context, _ uuid.UUID) (*domain.Job, error) {
+			return &domain.Job{ID: jobID, Skills: []string{"Go"}}, nil
+		},
+		incrementViewFn: func(_ context.Context, id uuid.UUID) error {
+			if id == jobID {
+				called <- struct{}{}
+			}
+			return nil
+		},
+	}
+
+	svc := &JobService{jobRepo: repo, cache: nil}
+	_, err := svc.GetByID(context.Background(), jobID, []string{"Go"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	select {
+	case <-called:
+	case <-time.After(500 * time.Millisecond):
+		t.Error("IncrementViews was not called")
+	}
 }
