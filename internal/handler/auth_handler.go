@@ -28,6 +28,17 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
+// Register godoc
+// @Summary      Register a new developer account
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body body registerRequest true "Credentials"
+// @Success      201 {object} response.Response{data=domain.User}
+// @Failure      400 {object} response.Response
+// @Failure      409 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /auth/register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req registerRequest
 	if err := validator.Decode(r, &req); err != nil {
@@ -60,6 +71,17 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, user)
 }
 
+// Login godoc
+// @Summary      Exchange credentials for a JWT
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body body loginRequest true "Credentials"
+// @Success      200 {object} response.Response{data=map[string]string}
+// @Failure      400 {object} response.Response
+// @Failure      401 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := validator.Decode(r, &req); err != nil {

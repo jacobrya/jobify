@@ -19,6 +19,15 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 	return &UserHandler{svc: svc}
 }
 
+// GetProfile godoc
+// @Summary      Get the current user's profile
+// @Tags         users
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} response.Response{data=map[string]interface{}}
+// @Failure      401 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /me [get]
 func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	userID, err := userIDFromCtx(r)
 	if err != nil {
@@ -49,6 +58,18 @@ type updateProfileRequest struct {
 	GithubURL       string   `json:"github_url"`
 }
 
+// UpdateProfile godoc
+// @Summary      Update the current user's developer profile
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body body updateProfileRequest true "Profile fields"
+// @Success      200 {object} response.Response{data=domain.DeveloperProfile}
+// @Failure      400 {object} response.Response
+// @Failure      401 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /me [put]
 func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID, err := userIDFromCtx(r)
 	if err != nil {

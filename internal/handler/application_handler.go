@@ -20,6 +20,15 @@ func NewApplicationHandler(svc *service.ApplicationService) *ApplicationHandler 
 	return &ApplicationHandler{svc: svc}
 }
 
+// List godoc
+// @Summary      List the current user's applications
+// @Tags         applications
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} response.Response{data=[]domain.Application}
+// @Failure      401 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /applications [get]
 func (h *ApplicationHandler) List(w http.ResponseWriter, r *http.Request) {
 	userID, err := userIDFromCtx(r)
 	if err != nil {
@@ -41,6 +50,18 @@ type createAppRequest struct {
 	Note  string `json:"note"`
 }
 
+// Create godoc
+// @Summary      Save/apply to a job
+// @Tags         applications
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body body createAppRequest true "Application payload"
+// @Success      201 {object} response.Response{data=domain.Application}
+// @Failure      400 {object} response.Response
+// @Failure      401 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /applications [post]
 func (h *ApplicationHandler) Create(w http.ResponseWriter, r *http.Request) {
 	userID, err := userIDFromCtx(r)
 	if err != nil {
@@ -73,6 +94,20 @@ type updateStatusRequest struct {
 	Status domain.ApplicationStatus `json:"status"`
 }
 
+// UpdateStatus godoc
+// @Summary      Update application status
+// @Tags         applications
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path string              true "Application UUID"
+// @Param        body body updateStatusRequest true "New status"
+// @Success      200 {object} response.Response{data=map[string]string}
+// @Failure      400 {object} response.Response
+// @Failure      401 {object} response.Response
+// @Failure      403 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /applications/{id} [put]
 func (h *ApplicationHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	userID, err := userIDFromCtx(r)
 	if err != nil {
@@ -106,6 +141,19 @@ func (h *ApplicationHandler) UpdateStatus(w http.ResponseWriter, r *http.Request
 	response.JSON(w, http.StatusOK, map[string]string{"status": string(req.Status)})
 }
 
+// Delete godoc
+// @Summary      Delete an application
+// @Tags         applications
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path string true "Application UUID"
+// @Success      200 {object} response.Response{data=map[string]string}
+// @Failure      400 {object} response.Response
+// @Failure      401 {object} response.Response
+// @Failure      403 {object} response.Response
+// @Failure      404 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /applications/{id} [delete]
 func (h *ApplicationHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	userID, err := userIDFromCtx(r)
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/abzalserikbay/jobify/docs"
 	"github.com/abzalserikbay/jobify/internal/config"
 	"github.com/abzalserikbay/jobify/internal/handler"
 	"github.com/abzalserikbay/jobify/internal/middleware"
@@ -22,6 +23,15 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// @title Jobify API
+// @version 1.0
+// @description IT job platform REST API with skill matching and application tracking.
+// @host localhost:8080
+// @BasePath /api/v1
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer {token}" (token is returned by /auth/login).
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 

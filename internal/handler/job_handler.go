@@ -24,6 +24,21 @@ func NewJobHandler(svc *service.JobService, userSvc *service.UserService) *JobHa
 	return &JobHandler{svc: svc, userSvc: userSvc}
 }
 
+// List godoc
+// @Summary      List jobs with filters and pagination
+// @Tags         jobs
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page        query int    false "Page number (default 1)"
+// @Param        limit       query int    false "Page size (default 20)"
+// @Param        skills      query string false "Comma-separated skills filter"
+// @Param        remote      query bool   false "Only remote jobs"
+// @Param        salary_min  query int    false "Minimum salary"
+// @Param        salary_max  query int    false "Maximum salary"
+// @Success      200 {object} response.Response{data=[]domain.Job,meta=response.Meta}
+// @Failure      401 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /jobs [get]
 func (h *JobHandler) List(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
@@ -69,6 +84,18 @@ func (h *JobHandler) List(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetByID godoc
+// @Summary      Get a job by ID with skill match against current user
+// @Tags         jobs
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path string true "Job UUID"
+// @Success      200 {object} response.Response{data=domain.JobWithMatch}
+// @Failure      400 {object} response.Response
+// @Failure      401 {object} response.Response
+// @Failure      404 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /jobs/{id} [get]
 func (h *JobHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -108,6 +135,19 @@ type createJobRequest struct {
 	URL         string   `json:"url"`
 }
 
+// Create godoc
+// @Summary      Create a new job (admin only)
+// @Tags         jobs
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body body createJobRequest true "Job payload"
+// @Success      201 {object} response.Response{data=domain.Job}
+// @Failure      400 {object} response.Response
+// @Failure      401 {object} response.Response
+// @Failure      403 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /jobs [post]
 func (h *JobHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req createJobRequest
 	if err := validator.Decode(r, &req); err != nil {
@@ -139,6 +179,20 @@ func (h *JobHandler) Create(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, job)
 }
 
+// Update godoc
+// @Summary      Update an existing job (admin only)
+// @Tags         jobs
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path string            true "Job UUID"
+// @Param        body body createJobRequest  true "Job payload"
+// @Success      200 {object} response.Response{data=domain.Job}
+// @Failure      400 {object} response.Response
+// @Failure      401 {object} response.Response
+// @Failure      403 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /jobs/{id} [put]
 func (h *JobHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -174,6 +228,18 @@ func (h *JobHandler) Update(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, job)
 }
 
+// Delete godoc
+// @Summary      Delete a job (admin only)
+// @Tags         jobs
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path string true "Job UUID"
+// @Success      200 {object} response.Response{data=map[string]string}
+// @Failure      400 {object} response.Response
+// @Failure      401 {object} response.Response
+// @Failure      403 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /jobs/{id} [delete]
 func (h *JobHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
