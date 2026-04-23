@@ -1,27 +1,95 @@
 package service
 
-import "testing"
+import (
+	"sort"
+	"testing"
+)
 
 func TestCalculateMatch(t *testing.T) {
 	tests := []struct {
-		name     string
-		user     []string
-		job      []string
-		expected int
+		name        string
+		user        []string
+		job         []string
+		wantPercent int
+		wantMatched []string
+		wantMissing []string
 	}{
-		{"Perfect Match", []string{"Go", "Docker"}, []string{"Go", "Docker"}, 100},
-		{"Half Match", []string{"Go"}, []string{"Go", "Java"}, 50},
-		{"No Match", []string{"PHP"}, []string{"Rust"}, 0},
-		{"Empty Skills", []string{}, []string{"Go"}, 0},
+		{
+			name:        "perfect match",
+			user:        []string{"Go", "Docker"},
+			job:         []string{"Go", "Docker"},
+			wantPercent: 100,
+			wantMatched: []string{"docker", "go"},
+			wantMissing: nil,
+		},
+		{
+			name:        "half match",
+			user:        []string{"Go"},
+			job:         []string{"Go", "Java"},
+			wantPercent: 50,
+			wantMatched: []string{"go"},
+			wantMissing: []string{"java"},
+		},
+		{
+			name:        "no match",
+			user:        []string{"PHP"},
+			job:         []string{"Rust"},
+			wantPercent: 0,
+			wantMatched: nil,
+			wantMissing: []string{"rust"},
+		},
+		{
+			name:        "empty user skills",
+			user:        []string{},
+			job:         []string{"Go"},
+			wantPercent: 0,
+			wantMatched: nil,
+			wantMissing: []string{"go"},
+		},
+		{
+			name:        "case insensitive",
+			user:        []string{"go", "DOCKER"},
+			job:         []string{"Go", "docker"},
+			wantPercent: 100,
+			wantMatched: []string{"docker", "go"},
+			wantMissing: nil,
+		},
+		{
+			name:        "both empty",
+			user:        []string{},
+			job:         []string{},
+			wantPercent: 0,
+			wantMatched: nil,
+			wantMissing: nil,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Вызываем функцию из твоего сервиса
-			res := CalculateMatch(tt.user, tt.job)
-			if res != tt.expected {
-				t.Errorf("%s: got %d, want %d", tt.name, res, tt.expected)
+			percent, matched, missing := CalculateMatch(tt.user, tt.job)
+			if percent != tt.wantPercent {
+				t.Errorf("percent: got %d, want %d", percent, tt.wantPercent)
+			}
+			sort.Strings(matched)
+			sort.Strings(missing)
+			if !equalSlices(matched, tt.wantMatched) {
+				t.Errorf("matched: got %v, want %v", matched, tt.wantMatched)
+			}
+			if !equalSlices(missing, tt.wantMissing) {
+				t.Errorf("missing: got %v, want %v", missing, tt.wantMissing)
 			}
 		})
 	}
+}
+
+func equalSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
