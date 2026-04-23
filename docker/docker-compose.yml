@@ -36,7 +36,7 @@ services:
       HTTP_PORT: "8080"
       DATABASE_URL: "postgres://jobify:secret@postgres:5432/jobify?sslmode=disable"
       REDIS_ADDR: "redis:6379"
-      JWT_SECRET: "${JWT_SECRET:-change-me-in-production}"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required}"
       REMOTIVE_API_URL: "https://remotive.com/api/remote-jobs"
     depends_on:
       postgres:
