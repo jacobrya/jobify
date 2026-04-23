@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/abzalserikbay/jobify/internal/domain"
 	"github.com/abzalserikbay/jobify/internal/repository"
@@ -32,6 +34,14 @@ func (s *JobService) GetByID(ctx context.Context, id uuid.UUID, userSkills []str
 	if err != nil {
 		return nil, err
 	}
+
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := s.jobRepo.IncrementViews(bgCtx, id); err != nil {
+			slog.Error("increment views failed", "job_id", id, "err", err)
+		}
+	}()
 
 	percent, matched, missing := CalculateMatch(userSkills, job.Skills)
 	return &domain.JobWithMatch{
