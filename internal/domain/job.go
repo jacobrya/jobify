@@ -20,6 +20,7 @@ type Job struct {
 	SourceID    string    `json:"source_id,omitempty"`
 	URL         string    `json:"url"`
 	IsActive    bool      `json:"is_active"`
+	ViewsCount  int64     `json:"views_count"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
