@@ -3,18 +3,20 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	HTTPPort       string
-	DatabaseURL    string
-	RedisAddr      string
-	JWTSecret      string
-	JWTExpiry      time.Duration
-	RemotiveAPIURL string
+	HTTPPort        string
+	DatabaseURL     string
+	RedisAddr       string
+	JWTSecret       string
+	JWTExpiry       time.Duration
+	RemotiveAPIURL  string
+	RateLimitPerMin int
 }
 
 func Load() (*Config, error) {
@@ -31,18 +33,28 @@ func Load() (*Config, error) {
 	}
 
 	return &Config{
-		HTTPPort:       getEnv("HTTP_PORT", "8080"),
-		DatabaseURL:    dbURL,
-		RedisAddr:      getEnv("REDIS_ADDR", "localhost:6379"),
-		JWTSecret:      jwtSecret,
-		JWTExpiry:      72 * time.Hour,
-		RemotiveAPIURL: getEnv("REMOTIVE_API_URL", "https://remotive.com/api/remote-jobs"),
+		HTTPPort:        getEnv("HTTP_PORT", "8080"),
+		DatabaseURL:     dbURL,
+		RedisAddr:       getEnv("REDIS_ADDR", "localhost:6379"),
+		JWTSecret:       jwtSecret,
+		JWTExpiry:       72 * time.Hour,
+		RemotiveAPIURL:  getEnv("REMOTIVE_API_URL", "https://remotive.com/api/remote-jobs"),
+		RateLimitPerMin: getEnvInt("RATE_LIMIT_PER_MIN", 60),
 	}, nil
 }
 
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
+	}
+	return fallback
+}
+
+func getEnvInt(key string, fallback int) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			return n
+		}
 	}
 	return fallback
 }

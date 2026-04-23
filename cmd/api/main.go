@@ -54,6 +54,7 @@ func main() {
 	jobRepo := postgresrepo.NewJobRepo(db)
 	appRepo := postgresrepo.NewApplicationRepo(db)
 	jobCache := rediscache.NewJobCache(rdb)
+	rlStore := rediscache.NewRateLimitStore(rdb)
 
 	// Services
 	h := hasher.New()
@@ -77,6 +78,8 @@ func main() {
 		JobHandler:         jobHandler,
 		ApplicationHandler: appHandler,
 		JWT:                jwt,
+		RateLimitStore:     rlStore,
+		RateLimitPerMin:    cfg.RateLimitPerMin,
 	})
 
 	// Apply logger middleware

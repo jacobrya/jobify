@@ -16,6 +16,8 @@ type Deps struct {
 	JobHandler         *JobHandler
 	ApplicationHandler *ApplicationHandler
 	JWT                *jwtpkg.Manager
+	RateLimitStore     middleware.RateLimitStore
+	RateLimitPerMin    int
 }
 
 func NewRouter(deps *Deps) http.Handler {
@@ -28,6 +30,9 @@ func NewRouter(deps *Deps) http.Handler {
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
 	}))
+	if deps.RateLimitStore != nil {
+		r.Use(middleware.RateLimit(deps.RateLimitStore, deps.RateLimitPerMin))
+	}
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
