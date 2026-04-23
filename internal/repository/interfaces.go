@@ -35,6 +35,7 @@ type JobRepository interface {
 	Update(ctx context.Context, job *domain.Job) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	ExistsBySourceID(ctx context.Context, sourceID string) (bool, error)
+	IncrementViews(ctx context.Context, jobID uuid.UUID) error
 }
 
 type ApplicationRepository interface {
@@ -43,4 +44,11 @@ type ApplicationRepository interface {
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]domain.Application, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status domain.ApplicationStatus) error
 	Delete(ctx context.Context, id uuid.UUID) error
+}
+
+type SavedJobRepository interface {
+	Create(ctx context.Context, savedJob *domain.SavedJob) error
+	Delete(ctx context.Context, userID, jobID uuid.UUID) error
+	ListByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]domain.Job, int, error)
+	Exists(ctx context.Context, userID, jobID uuid.UUID) (bool, error)
 }
