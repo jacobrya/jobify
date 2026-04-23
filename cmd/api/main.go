@@ -41,7 +41,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Database
 	db, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
 	if err != nil {
 		logger.Error("failed to connect to postgres", "err", err)
@@ -54,19 +53,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Redis
 	rdb := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})
 	defer rdb.Close()
 
-	// Repos
 	userRepo := postgresrepo.NewUserRepo(db)
 	profileRepo := postgresrepo.NewProfileRepo(db)
 	jobRepo := postgresrepo.NewJobRepo(db)
 	appRepo := postgresrepo.NewApplicationRepo(db)
+	savedJobRepo := postgresrepo.NewSavedJobRepo(db)
 	jobCache := rediscache.NewJobCache(rdb)
 	rlStore := rediscache.NewRateLimitStore(rdb)
 
-	// Services
 	h := hasher.New()
 	jwt := jwtpkg.NewManager(cfg.JWTSecret, cfg.JWTExpiry)
 
@@ -74,35 +71,33 @@ func main() {
 	userSvc := service.NewUserService(userRepo, profileRepo)
 	jobSvc := service.NewJobService(jobRepo, jobCache)
 	appSvc := service.NewApplicationService(appRepo)
+	savedJobSvc := service.NewSavedJobService(savedJobRepo)
 
-	// Handlers
 	authHandler := handler.NewAuthHandler(authSvc)
 	userHandler := handler.NewUserHandler(userSvc)
 	jobHandler := handler.NewJobHandler(jobSvc, userSvc)
 	appHandler := handler.NewApplicationHandler(appSvc)
+	savedJobHandler := handler.NewSavedJobHandler(savedJobSvc)
 
-	// Router
 	router := handler.NewRouter(&handler.Deps{
 		AuthHandler:        authHandler,
 		UserHandler:        userHandler,
 		JobHandler:         jobHandler,
 		ApplicationHandler: appHandler,
+		SavedJobHandler:    savedJobHandler,
 		JWT:                jwt,
 		RateLimitStore:     rlStore,
 		RateLimitPerMin:    cfg.RateLimitPerMin,
 	})
 
-	// Apply logger middleware
 	loggedRouter := middleware.Logger(logger)(router)
 
-	// Background worker
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	aggregator := worker.NewJobAggregator(jobRepo, logger, 6*time.Hour, cfg.RemotiveAPIURL)
 	go aggregator.Start(ctx)
 
-	// HTTP server with graceful shutdown
 	srv := &http.Server{
 		Addr:         ":" + cfg.HTTPPort,
 		Handler:      loggedRouter,
