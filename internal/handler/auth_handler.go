@@ -28,6 +28,10 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
+type tokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
 // Register godoc
 // @Summary      Register a new developer account
 // @Tags         auth
@@ -72,12 +76,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 // Login godoc
-// @Summary      Exchange credentials for a JWT
+// @Summary      Exchange credentials for a token pair
 // @Tags         auth
 // @Accept       json
 // @Produce      json
 // @Param        body body loginRequest true "Credentials"
-// @Success      200 {object} response.Response{data=map[string]string}
+// @Success      200 {object} response.Response{data=service.TokenPair}
 // @Failure      400 {object} response.Response
 // @Failure      401 {object} response.Response
 // @Failure      500 {object} response.Response
@@ -89,7 +93,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.svc.Login(r.Context(), service.LoginInput{
+	pair, err := h.svc.Login(r.Context(), service.LoginInput{
 		Email:    req.Email,
 		Password: req.Password,
 	})
@@ -102,5 +106,60 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSON(w, http.StatusOK, map[string]string{"token": token})
+	response.JSON(w, http.StatusOK, pair)
+}
+
+// Refresh godoc
+// @Summary      Refresh access token using a refresh token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body body tokenRequest true "Refresh token"
+// @Success      200 {object} response.Response{data=service.TokenPair}
+// @Failure      400 {object} response.Response
+// @Failure      401 {object} response.Response
+// @Failure      500 {object} response.Response
+// @Router       /auth/refresh [post]
+func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+	var req tokenRequest
+	if err := validator.Decode(r, &req); err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if req.RefreshToken == "" {
+		response.Error(w, http.StatusBadRequest, "refresh_token required")
+		return
+	}
+
+	pair, err := h.svc.Refresh(r.Context(), req.RefreshToken)
+	if errors.Is(err, domain.ErrUnauthorized) {
+		response.Error(w, http.StatusUnauthorized, "invalid refresh token")
+		return
+	}
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, "refresh failed")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, pair)
+}
+
+// Logout godoc
+// @Summary      Invalidate a refresh token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body body tokenRequest true "Refresh token"
+// @Success      204
+// @Failure      400 {object} response.Response
+// @Router       /auth/logout [post]
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	var req tokenRequest
+	if err := validator.Decode(r, &req); err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	_ = h.svc.Logout(r.Context(), req.RefreshToken)
+	w.WriteHeader(http.StatusNoContent)
 }

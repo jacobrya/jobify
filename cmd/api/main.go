@@ -63,11 +63,12 @@ func main() {
 	savedJobRepo := postgresrepo.NewSavedJobRepo(db)
 	jobCache := rediscache.NewJobCache(rdb)
 	rlStore := rediscache.NewRateLimitStore(rdb)
+	tokenStore := rediscache.NewTokenStore(rdb)
 
 	h := hasher.New()
 	jwt := jwtpkg.NewManager(cfg.JWTSecret, cfg.JWTExpiry)
 
-	authSvc := service.NewAuthService(userRepo, profileRepo, h, jwt)
+	authSvc := service.NewAuthService(userRepo, tokenStore, h, jwt, 7*24*time.Hour)
 	userSvc := service.NewUserService(userRepo, profileRepo)
 	jobSvc := service.NewJobService(jobRepo, jobCache)
 	appSvc := service.NewApplicationService(appRepo)
