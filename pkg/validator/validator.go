@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
+	"regexp"
 )
 
-func Decode(r *http.Request, dst interface{}) error {
+var emailRe = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+
+func Decode(r *http.Request, dst any) error {
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(dst); err != nil {
@@ -17,7 +19,7 @@ func Decode(r *http.Request, dst interface{}) error {
 }
 
 func ValidateEmail(email string) bool {
-	return strings.Contains(email, "@") && len(email) >= 3
+	return emailRe.MatchString(email)
 }
 
 func ValidatePassword(password string) bool {

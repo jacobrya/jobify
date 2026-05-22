@@ -28,6 +28,7 @@ func NewRouter(deps *Deps) http.Handler {
 
 	r.Use(chimiddleware.Recoverer)
 	r.Use(chimiddleware.RequestID)
+	r.Use(middleware.BodyLimit(1 << 20)) // 1 MB
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -45,6 +46,8 @@ func NewRouter(deps *Deps) http.Handler {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/auth/register", deps.AuthHandler.Register)
 		r.Post("/auth/login", deps.AuthHandler.Login)
+		r.Post("/auth/refresh", deps.AuthHandler.Refresh)
+		r.Post("/auth/logout", deps.AuthHandler.Logout)
 
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.JWTAuth(deps.JWT))
