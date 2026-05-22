@@ -16,6 +16,7 @@ type Job struct {
 	SalaryMax   int       `json:"salary_max"`
 	IsRemote    bool      `json:"is_remote"`
 	Location    string    `json:"location"`
+	JobType     string    `json:"job_type,omitempty"`
 	Source      string    `json:"source"`
 	SourceID    string    `json:"source_id,omitempty"`
 	URL         string    `json:"url"`

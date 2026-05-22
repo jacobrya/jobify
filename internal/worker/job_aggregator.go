@@ -110,15 +110,15 @@ func (w *JobAggregator) fetchFromRemotive(ctx context.Context) ([]domain.Job, er
 
 	jobs := make([]domain.Job, 0, len(remotiveResp.Jobs))
 	for _, rj := range remotiveResp.Jobs {
-		isRemote := true
 		jobs = append(jobs, domain.Job{
 			ID:          uuid.New(),
 			Title:       rj.Title,
 			Company:     rj.CompanyName,
 			Description: rj.Description,
 			Skills:      rj.Tags,
-			IsRemote:    isRemote,
+			IsRemote:    true, // remotive is a remote-only board
 			Location:    rj.CandidateRequiredLocation,
+			JobType:     rj.JobType,
 			Source:      "remotive",
 			SourceID:    fmt.Sprintf("remotive_%d", rj.ID),
 			URL:         rj.URL,

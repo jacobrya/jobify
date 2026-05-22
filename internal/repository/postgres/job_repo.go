@@ -22,12 +22,12 @@ func NewJobRepo(db *pgxpool.Pool) *JobRepo {
 }
 
 func (r *JobRepo) Create(ctx context.Context, j *domain.Job) error {
-	q := `INSERT INTO jobs (id, title, company, description, skills, salary_min, salary_max, is_remote, location, source, source_id, url, is_active)
-	      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+	q := `INSERT INTO jobs (id, title, company, description, skills, salary_min, salary_max, is_remote, location, job_type, source, source_id, url, is_active)
+	      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
 	      RETURNING created_at`
 	return r.db.QueryRow(ctx, q,
 		j.ID, j.Title, j.Company, j.Description, j.Skills,
-		j.SalaryMin, j.SalaryMax, j.IsRemote, j.Location,
+		j.SalaryMin, j.SalaryMax, j.IsRemote, j.Location, j.JobType,
 		j.Source, j.SourceID, j.URL, j.IsActive,
 	).Scan(&j.CreatedAt)
 }
@@ -35,11 +35,11 @@ func (r *JobRepo) Create(ctx context.Context, j *domain.Job) error {
 func (r *JobRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Job, error) {
 	var j domain.Job
 	q := `SELECT id, title, company, description, skills, salary_min, salary_max,
-	             is_remote, location, source, source_id, url, is_active, views_count, created_at
+	             is_remote, location, job_type, source, source_id, url, is_active, views_count, created_at
 	      FROM jobs WHERE id = $1 AND is_active = true`
 	err := r.db.QueryRow(ctx, q, id).Scan(
 		&j.ID, &j.Title, &j.Company, &j.Description, &j.Skills,
-		&j.SalaryMin, &j.SalaryMax, &j.IsRemote, &j.Location,
+		&j.SalaryMin, &j.SalaryMax, &j.IsRemote, &j.Location, &j.JobType,
 		&j.Source, &j.SourceID, &j.URL, &j.IsActive, &j.ViewsCount, &j.CreatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -50,7 +50,7 @@ func (r *JobRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Job, error
 
 func (r *JobRepo) List(ctx context.Context, f repository.JobFilter) ([]domain.Job, int, error) {
 	where := []string{"is_active = true"}
-	args := []interface{}{}
+	args := []any{}
 	i := 1
 
 	if len(f.Skills) > 0 {
@@ -92,7 +92,7 @@ func (r *JobRepo) List(ctx context.Context, f repository.JobFilter) ([]domain.Jo
 
 	args = append(args, f.Limit, offset)
 	q := fmt.Sprintf(`SELECT id, title, company, description, skills, salary_min, salary_max,
-	                         is_remote, location, source, source_id, url, is_active, views_count, created_at
+	                         is_remote, location, job_type, source, source_id, url, is_active, views_count, created_at
 	                  FROM jobs WHERE %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d`, cond, i, i+1)
 
 	rows, err := r.db.Query(ctx, q, args...)
@@ -106,7 +106,7 @@ func (r *JobRepo) List(ctx context.Context, f repository.JobFilter) ([]domain.Jo
 		var j domain.Job
 		if err := rows.Scan(
 			&j.ID, &j.Title, &j.Company, &j.Description, &j.Skills,
-			&j.SalaryMin, &j.SalaryMax, &j.IsRemote, &j.Location,
+			&j.SalaryMin, &j.SalaryMax, &j.IsRemote, &j.Location, &j.JobType,
 			&j.Source, &j.SourceID, &j.URL, &j.IsActive, &j.ViewsCount, &j.CreatedAt,
 		); err != nil {
 			return nil, 0, err
@@ -118,10 +118,10 @@ func (r *JobRepo) List(ctx context.Context, f repository.JobFilter) ([]domain.Jo
 
 func (r *JobRepo) Update(ctx context.Context, j *domain.Job) error {
 	q := `UPDATE jobs SET title=$1, company=$2, description=$3, skills=$4, salary_min=$5, salary_max=$6,
-	      is_remote=$7, location=$8, url=$9, is_active=$10 WHERE id=$11`
+	      is_remote=$7, location=$8, job_type=$9, url=$10, is_active=$11 WHERE id=$12`
 	_, err := r.db.Exec(ctx, q,
 		j.Title, j.Company, j.Description, j.Skills,
-		j.SalaryMin, j.SalaryMax, j.IsRemote, j.Location, j.URL, j.IsActive, j.ID,
+		j.SalaryMin, j.SalaryMax, j.IsRemote, j.Location, j.JobType, j.URL, j.IsActive, j.ID,
 	)
 	return err
 }
